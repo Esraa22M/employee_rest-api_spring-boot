@@ -11,23 +11,35 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.provisioning.JdbcUserDetailsManager;
+import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 
+import javax.sql.DataSource;
+
 @Configuration
 public class SecurityConfig {
-    @Bean
-    public InMemoryUserDetailsManager userDetailsManager(){
-        UserDetails johan= User.builder().username("johan").password("{noop}test123").roles("EMPLOYEE").build();
-        UserDetails esraa= User.builder().username("esraa").password("{noop}test123").roles("EMPLOYEE", "MANAGER").build();
-        UserDetails susan= User.builder().username("susan").password("{noop}test123").roles("EMPLOYEE", "MANAGER", "ADMIN").build();
+//    @Bean
+//    public InMemoryUserDetailsManager userDetailsManager(){
+//        UserDetails johan= User.builder().username("johan").password("{noop}test123").roles("EMPLOYEE").build();
+//        UserDetails esraa= User.builder().username("esraa").password("{noop}test123").roles("EMPLOYEE", "MANAGER").build();
+//        UserDetails susan= User.builder().username("susan").password("{noop}test123").roles("EMPLOYEE", "MANAGER", "ADMIN").build();
+//
+//        return new InMemoryUserDetailsManager(johan , esraa , susan);
+//    }
 
-        return new InMemoryUserDetailsManager(johan , esraa , susan);
+ //add support for JDBC no more hard coded users
+    @Bean
+    public UserDetailsManager userDetailsManager(DataSource dataSource){
+        return new JdbcUserDetailsManager(dataSource);
     }
     @Bean
     public SecurityFilterChain filterChain (HttpSecurity http)throws Exception{
         http.authorizeHttpRequests(config->
                 config.
+                        requestMatchers(HttpMethod.GET, "/h2-console/**").permitAll().
+                        requestMatchers(HttpMethod.POST, "/h2-console/**").permitAll().
                         requestMatchers("/docs/**","/swagger-ui/**","/v3/api-docs/**","/swagger-ui.html").permitAll().
                         requestMatchers(HttpMethod.GET, "/api/employees").hasRole("EMPLOYEE").
                         requestMatchers(HttpMethod.GET,"/api/employees/**").hasRole("EMPLOYEE").
@@ -38,6 +50,7 @@ public class SecurityConfig {
         //USE http basic authentication.
         http.httpBasic(Customizer.withDefaults());
         http.csrf(crf-> crf.disable());
+        http.headers(headers->headers.frameOptions(frameOptionsConfig -> frameOptionsConfig.disable()));
         //when it fails we catch it and call exceptionHandling method.
         http.exceptionHandling(exceptionHandling->
                 exceptionHandling.authenticationEntryPoint(authenticationEntryPoint()));
