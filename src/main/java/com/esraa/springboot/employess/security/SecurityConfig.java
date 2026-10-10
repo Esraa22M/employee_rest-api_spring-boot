@@ -32,7 +32,16 @@ public class SecurityConfig {
  //add support for JDBC no more hard coded users
     @Bean
     public UserDetailsManager userDetailsManager(DataSource dataSource){
-        return new JdbcUserDetailsManager(dataSource);
+        JdbcUserDetailsManager jdbcUserDetailsManager= new JdbcUserDetailsManager(dataSource);
+        //define query to retrieve user by username.
+        jdbcUserDetailsManager.setUsersByUsernameQuery(
+                "select user_id ,password,active from system_users where user_id=?"
+        );
+        //define query to retrieve authorities/role by username.
+        jdbcUserDetailsManager.setAuthoritiesByUsernameQuery(
+                "select user_id , role from roles where user_id=?"
+        );
+        return jdbcUserDetailsManager;
     }
     @Bean
     public SecurityFilterChain filterChain (HttpSecurity http)throws Exception{
